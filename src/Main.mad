@@ -1,0 +1,25 @@
+#-
+import WebSocket from "ws";
+-#
+
+import ByteArray from "ByteArray"
+
+type WebSocket = WebSocket
+export type WebSocket
+
+createWebSocket :: String -> WebSocket
+export createWebSocket = (url) => #- new WebSocket(url) -#
+
+onConnected :: ({} -> {}) -> WebSocket -> {}
+export onConnected = (cb, ws) => #- ws.on("open", cb) -#
+
+onDisconnected :: ({} -> {}) -> WebSocket -> {}
+export onDisconnected = (cb, ws) => #- ws.on("close", cb) -#
+
+onMessage :: (ByteArray -> {}) -> WebSocket -> {}
+export onMessage = (cb, ws) => #- ws.on("message", cb) -#
+
+send :: ByteArray -> WebSocket -> {}
+export send = (data, ws) => #- ws.send(data) -#
+
+
