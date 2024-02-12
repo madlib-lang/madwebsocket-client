@@ -1,24 +1,72 @@
 # madwebsocket-client
-## Getting started
-You just created a new madlib project, if it's your first project you should read the following.
-### Notes on Madlib
-Madlib is a general purpose programming language that compiles to Javascript. It means that you need to have [Nodejs](https://nodejs.org/) installed and configured in order to make it work. Madlib can target nodejs or browser, by default it will compile for nodejs.
-### How to run it
-First, you need to compile the program.
-For node:
-```shell
-madlib compile -i src/Main.mad
-```
-Then, you can run it like this:
-```shell
-node build/Main.mjs
+
+## API
+
+```madlib
+connect :: String -> WebSocket
+onConnected :: ({} -> {}) -> WebSocket -> {}
+onDisconnected :: ({} -> {}) -> WebSocket -> {}
+onError :: (WebSocketError -> {}) -> WebSocket -> {}
+onMessage :: (ByteArray -> {}) -> WebSocket -> {}
+send :: ByteArray -> WebSocket -> {}
 ```
 
-As a native binary:
-```shell
-madlib compile --target llvm -i src/Main.mad -o ./build/helloWorld
-```
-Then, you can run it like this:
-```shell
-./build/helloWorld
+## Example
+
+```madlib
+import ByteArray from "ByteArray"
+import IO from "IO"
+import Wish from "Wish"
+
+import WebSocket from "./Main"
+
+
+
+noop = () => {}
+
+delaySend :: Integer -> ByteArray -> WebSocket -> {}
+delaySend = (after, data, ws) => {
+  Wish.fulfill(
+    noop,
+    noop,
+    do {
+      _ <- Wish.after(after, {})
+      WebSocket.send(data, ws)
+      return of({})
+    },
+  )
+
+  return {}
+}
+
+main = () => {
+  ws = WebSocket.connect("ws:/localhost:3000/path")
+
+  WebSocket.onError(
+    pipe(
+      .code,
+      IO.putLine,
+    ),
+    ws,
+  )
+
+  WebSocket.onConnected(
+    () => {
+      WebSocket.send(ByteArray.fromString("HELLO"), ws)
+      IO.putLine("OPENED")
+    },
+    ws,
+  )
+
+  WebSocket.onDisconnected(() => { IO.putLine("CLOSED") }, ws)
+
+  WebSocket.onMessage(
+    (msg) => {
+      IO.putLine(ByteArray.toString(msg))
+      delaySend(1000, msg, ws)
+    },
+    ws,
+  )
+}
+
 ```

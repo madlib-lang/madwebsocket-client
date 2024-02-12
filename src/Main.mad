@@ -7,14 +7,33 @@ import ByteArray from "ByteArray"
 type WebSocket = WebSocket
 export type WebSocket
 
-createWebSocket :: String -> WebSocket
-export createWebSocket = (url) => #- new WebSocket(url) -#
+
+// interface ErrnoException extends Error {
+//   errno?: number;
+//   code?: string;
+//   path?: string;
+//   syscall?: string;
+//   stack?: string;
+// }
+alias WebSocketError = {
+  errno :: Integer,
+  code :: String,
+  path :: String,
+  syscall :: String,
+  stack :: String,
+}
+
+connect :: String -> WebSocket
+export connect = (url) => #- new WebSocket(url) -#
 
 onConnected :: ({} -> {}) -> WebSocket -> {}
 export onConnected = (cb, ws) => #- ws.on("open", cb) -#
 
 onDisconnected :: ({} -> {}) -> WebSocket -> {}
 export onDisconnected = (cb, ws) => #- ws.on("close", cb) -#
+
+onError :: (WebSocketError -> {}) -> WebSocket -> {}
+export onError = (cb, ws) => #- ws.on("error", cb) -#
 
 onMessage :: (ByteArray -> {}) -> WebSocket -> {}
 export onMessage = (cb, ws) => #- ws.on("message", cb) -#
