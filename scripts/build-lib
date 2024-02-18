@@ -1,0 +1,24 @@
+#!/bin/sh
+
+mkdir -p .buildlibs
+cd .buildlibs
+git clone git@github.com:uNetworking/uWebSockets.git
+cd uWebSockets
+git checkout v0.14
+cp ../../patchs/* src/
+mkdir -p build/lib
+mkdir -p build/include
+
+c++ -DUSE_LIBUV=1 -g -Isrc -I"$(madlib config runtime-lib-headers-path)" -std=c++17 -O1 -fPIC -c src/*.cpp
+mv *.o build/lib
+cp src/*.h build/include/
+ar rc build/lib/libuwebsockets.a build/lib/*.o
+
+
+mkdir -p ../../lib/include
+mkdir -p ../../lib/lib
+cp -R build/include ../../lib/
+cp -R build/lib/*.a ../../lib/lib
+
+# build libmadwebsocketclient.a
+make -C lib -j

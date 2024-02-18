@@ -1,5 +1,9 @@
 {
   "name": "madwebsocket-client",
   "version": "0.0.1",
-  "main": "src/Main.mad"
+  "main": "src/Main.mad",
+  "staticLibs": [
+    "./lib/lib/libuwebsockets.a",
+    "./lib/build/libmadwebsocketclient.a"
+  ]
 }
