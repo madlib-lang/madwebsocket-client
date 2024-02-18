@@ -2,6 +2,9 @@
   "name": "madwebsocket-client",
   "version": "0.0.1",
   "main": "src/Main.mad",
+  "hooks": {
+    "postInstall": "./scripts/build-lib"
+  },
   "staticLibs": [
     "./lib/lib/libuwebsockets.a",
     "./lib/build/libmadwebsocketclient.a"
