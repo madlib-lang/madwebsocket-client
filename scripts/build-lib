@@ -20,5 +20,7 @@ mkdir -p ../../lib/lib
 cp -R build/include ../../lib/
 cp -R build/lib/*.a ../../lib/lib
 
+cd ../../
+
 # build libmadwebsocketclient.a
 make -C lib -j
