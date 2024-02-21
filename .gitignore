@@ -2,9 +2,11 @@ node_modules
 madlib_modules
 .module_cache
 src/HelloWorld.mad
+src/LLVM.mad
 build
 lib/include
 lib/lib
 a.out.dSYM
 a.out
 .buildlibs
+.vscode

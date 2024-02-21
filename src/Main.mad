@@ -1,12 +1,7 @@
-#-
-import WebSocket from "ws";
--#
-
 import ByteArray from "ByteArray"
 
 type WebSocket = WebSocket
 export type WebSocket
-
 
 // interface ErrnoException extends Error {
 //   errno?: number;
@@ -16,12 +11,20 @@ export type WebSocket
 //   stack?: string;
 // }
 alias WebSocketError = {
-  errno :: Integer,
+  errno :: String,
   code :: String,
   path :: String,
   syscall :: String,
   stack :: String,
 }
+
+#iftarget js
+
+
+#-
+import WebSocket from "ws";
+-#
+
 
 connect :: String -> WebSocket
 export connect = (url) => #- new WebSocket(url) -#
@@ -41,4 +44,45 @@ export onMessage = (cb, ws) => #- ws.on("message", cb) -#
 send :: ByteArray -> WebSocket -> {}
 export send = (data, ws) => #- ws.send(data) -#
 
+disconnect :: WebSocket -> {}
+export disconnect = (ws) => #- ws.terminate() -#
 
+cancelConnection :: WebSocket -> {}
+export cancelConnection = disconnect
+
+
+#elseif llvm
+
+connect :: String -> WebSocket
+export connect = extern "madwebsocketclient__connect"
+
+cancelConnection :: WebSocket -> {}
+export cancelConnection = extern "madwebsocketclient__cancelConnection"
+
+onConnected :: ({} -> {}) -> WebSocket -> {}
+export onConnected = extern "madwebsocketclient__onConnected"
+
+onDisconnected :: ({} -> {}) -> WebSocket -> {}
+export onDisconnected = extern "madwebsocketclient__onDisconnected"
+
+onMessage :: (ByteArray -> {}) -> WebSocket -> {}
+export onMessage = extern "madwebsocketclient__onMessage"
+
+onErrorFFI :: (WebSocketError -> {}) -> WebSocket -> {}
+onErrorFFI = extern "madwebsocketclient__onError"
+
+export onError = (cb, ws) => onErrorFFI(() => cb({
+  errno: "ECONNREFUSED",
+  code: "ECONNREFUSED",
+  path: "",
+  syscall: "",
+  stack: "",
+}), ws)
+
+send :: ByteArray -> WebSocket -> {}
+export send = extern "madwebsocketclient__send"
+
+disconnect :: WebSocket -> {}
+export disconnect = extern "madwebsocketclient__disconnect"
+
+#endif

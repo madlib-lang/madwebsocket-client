@@ -35,24 +35,7 @@ Fn* fnptr(Callable&& c)
     return fnptr_<N>(std::forward<Callable>(c), (Fn*)nullptr);
 }
 
-typedef struct ConnectData {
-  uv_os_sock_t fd;
-  uS::Loop *loop;
-  std::function<void (uS::Socket *)> cb;
-  uS::NodeData *nodeData;
-  const char *hostname;
-  int port;
-  bool secure;
-} ConnectData_t;
 
-
-char *copyString(char *src) {
-  size_t nameLength = strlen(src);
-  char *dest = (char*) malloc(nameLength + 1);
-  memcpy(dest, src, nameLength);
-  dest[nameLength] = '\0';
-  return dest;
-}
 
 
 namespace uS
@@ -168,62 +151,63 @@ namespace uS
                 return nullptr;
             }
 
-            uv_os_sock_t fd = netContext->createSocket(result->ai_family, result->ai_socktype, result->ai_protocol);
-            if (fd == INVALID_SOCKET) {
-                freeaddrinfo(result);
-                return nullptr;
-            }
-
-            uv_connect_t *handle = new uv_connect_t;
-            uv_tcp_t *tcpHandle = new uv_tcp_t;
-
-            uv_tcp_init((uv_loop_t *) getLoop(), tcpHandle);
-            uv_tcp_open(tcpHandle, fd);
-
-            ConnectData_t *connectData = new ConnectData_t;
-            connectData->loop = this->getLoop();
-            connectData->cb = cb;
-            connectData->port = port;
-            connectData->nodeData = nodeData;
-            connectData->hostname = copyString((char *) hostname);
-            connectData->secure = secure;
-            connectData->fd = fd;
-
-            handle->data = (void*) connectData;
-
-            uv_tcp_connect(handle, tcpHandle, result->ai_addr, [](uv_connect_t* req, int status) {
-            // auto connectCB = fnptr<void (uv_connect_t* req, int status)>([this, cb, port, nodeData, hostname, secure](uv_connect_t* req, int status) {
-
-                ConnectData_t *data = (ConnectData_t *) req->data;
+            auto connectCB = fnptr<void (uv_connect_t* req, int status)>([this, cb, port, nodeData, hostname, secure](uv_connect_t* req, int status) {
                 if (status < 0) {
-                    data->cb(nullptr);
-                    return;
+                    cb(nullptr);
+                    return nullptr;
                 }
 
-                uv_os_fd_t fd = data->fd;
+                uv_os_fd_t fd;
+                uv_fileno((uv_handle_t*)req->handle, &fd);
 
                 if (fd == INVALID_SOCKET) {
-                    data->cb(nullptr);
-                    return;
+                    cb(nullptr);
+                    return nullptr;
                 }
 
                 SSL *ssl = nullptr;
 
-                if (data->secure)
+                if (secure)
                 {
-                    ssl = SSL_new(data->nodeData->clientContext);
+                    ssl = SSL_new(nodeData->clientContext);
                     SSL_set_connect_state(ssl);
-                    SSL_set_tlsext_host_name(ssl, data->hostname);
+                    SSL_set_tlsext_host_name(ssl, hostname);
                 }
 
-                Socket initialSocket(data->nodeData, data->loop, fd, ssl);
+                Socket initialSocket(nodeData, getLoop(), fd, ssl);
                 uS::Socket *socket = I(&initialSocket);
 
                 socket->setCb(connect_cb<C>);
-                socket->start(data->loop, socket, socket->setPoll(UV_WRITABLE));
-                data->cb(socket);
+                socket->start(loop, socket, socket->setPoll(UV_WRITABLE));
+                cb(socket);
             });
+
+            uv_connect_t *handle = new uv_connect_t;
+            uv_tcp_t *tcpHandle = new uv_tcp_t;
+            uv_tcp_init((uv_loop_t *) getLoop(), tcpHandle);
+
+            uv_tcp_connect(handle, tcpHandle, result->ai_addr, connectCB);
             return tcpHandle;
+            // uv_tcp_connect(handle, tcpHandle, result->ai_addr, [this, cb, nodeData, hostname, secure](uv_connect_t* req, int status) {
+            //     uv_os_fd_t fd;
+            //     uv_fileno((uv_handle_t*)req, &fd);
+            //     SSL *ssl = nullptr;
+
+            //     if (secure)
+            //     {
+            //         ssl = SSL_new(nodeData->clientContext);
+            //         SSL_set_connect_state(ssl);
+            //         SSL_set_tlsext_host_name(ssl, hostname);
+            //     }
+
+            //     Socket initialSocket(nodeData, getLoop(), fd, ssl);
+            //     uS::Socket *socket = I(&initialSocket);
+
+            //     socket->setCb(connect_cb<C>);
+            //     socket->start(loop, socket, socket->setPoll(UV_WRITABLE));
+            //     cb(socket);
+            // });
+            // freeaddrinfo(result);
         }
 
         // todo: hostname, backlog
