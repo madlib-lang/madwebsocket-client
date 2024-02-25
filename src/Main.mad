@@ -47,9 +47,6 @@ export send = (data, ws) => #- ws.send(data) -#
 disconnect :: WebSocket -> {}
 export disconnect = (ws) => #- ws.terminate() -#
 
-cancelConnection :: WebSocket -> {}
-export cancelConnection = disconnect
-
 
 #elseif llvm
 
