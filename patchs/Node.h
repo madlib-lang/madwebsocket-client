@@ -9,6 +9,7 @@
 #include<type_traits>
 #include<utility>
 #include<new>
+#include <functional>
 
 template<int, typename Callable, typename Ret, typename... Args>
 auto fnptr_(Callable&& c, Ret (*)(Args...))
